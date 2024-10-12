@@ -13,11 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogTrigger,
-} from "@radix-ui/react-alert-dialog";
+import { AlertDialog, AlertDialogTrigger } from "@radix-ui/react-alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialogCancel,
@@ -138,9 +134,9 @@ export default function AdminUI() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={signOut}>
+                  <AlertDialogCancel onClick={signOut}>
                     Log Out
-                  </AlertDialogAction>
+                  </AlertDialogCancel>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

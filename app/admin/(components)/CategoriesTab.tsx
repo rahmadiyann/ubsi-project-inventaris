@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Layers, RefreshCw, Plus } from "lucide-react";
+import { Loader2, Layers, RefreshCw, Plus, Edit, Trash2 } from "lucide-react";
 import { fetchTabData } from "../(utils)/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,17 +25,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
 
 export default function CategoriesTab() {
   const [data, setData] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [newCategory, setNewCategory] = useState({
     name: "",
   });
+  const [editCategory, setEditCategory] = useState<any>(null);
+  const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,11 +53,9 @@ export default function CategoriesTab() {
   );
 
   const fetchData = async () => {
-    setIsLoading(true);
     setData([]);
     const fetchedData = await fetchTabData("categories");
     setData(fetchedData);
-    setIsLoading(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,6 +76,8 @@ export default function CategoriesTab() {
         description: "Category added successfully",
       });
       fetchData();
+      setIsAddCategoryDialogOpen(false);
+      setNewCategory({ name: "" });
     } catch (error) {
       toast({
         title: "Error",
@@ -90,23 +89,87 @@ export default function CategoriesTab() {
 
   const isAddCategoryDisabled = !newCategory.name;
 
+  const handleEditClick = (category: any) => {
+    setEditCategory(category);
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditCategory((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditCategory = async () => {
+    try {
+      const response = await fetch("/api/prisma", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionType: "category", ...editCategory }),
+      });
+      if (!response.ok) throw new Error("Failed to update category");
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      });
+      fetchData();
+      setEditCategory(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      const response = await fetch("/api/prisma", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionType: "category", id }),
+      });
+      if (!response.ok) throw new Error("Failed to delete category");
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
           <CardTitle className="flex items-center">
             <Layers className="mr-2 h-4 w-4" />
             Categories
           </CardTitle>
-          <div className="flex space-x-2">
-            <AlertDialog>
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+            <AlertDialog
+              open={isAddCategoryDialogOpen}
+              onOpenChange={(open) => {
+                setIsAddCategoryDialogOpen(open);
+                if (!open) setNewCategory({ name: "" });
+              }}
+            >
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Category
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="max-w-[90vw] w-full sm:max-w-lg">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Add New Category</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -138,7 +201,12 @@ export default function CategoriesTab() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button onClick={() => fetchData()} variant="outline" size="sm">
+            <Button
+              onClick={() => fetchData()}
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
@@ -151,47 +219,125 @@ export default function CategoriesTab() {
           placeholder="Type in category name or medicine name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="mb-4"
+          className="mb-4 w-full"
         />
-        <div className="overflow-auto h-64 w-full max-w-4xl mx-auto">
+        <div className="overflow-auto h-[calc(100vh-400px)] w-full">
           {data.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-1/6">ID</TableHead>
-                  <TableHead className="w-2/6">Name</TableHead>
-                  <TableHead className="w-3/6">Medicines</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredData.map((item) => (
-                  <TableRow
-                    onClick={() => router.push(`/admin/categories/${item.id}`)}
-                    key={item.id}
-                    className="cursor-pointer"
-                  >
-                    <TableCell className="w-1/6">{item.id}</TableCell>
-                    <TableCell className="w-2/6">{item.name}</TableCell>
-                    <TableCell className="w-3/6">
-                      {item.medicines
-                        .map((medicine: any) => medicine.name)
-                        .join(", ")}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table className="min-w-full w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      ID
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Name
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                      Medicines
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin" />
+                </TableHeader>
+                <TableBody>
+                  {filteredData.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                        {item.id}
+                      </TableCell>
+                      <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                        {item.name}
+                      </TableCell>
+                      <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                        {item.medicines
+                          .map((medicine: any) => medicine.name)
+                          .join(", ")}
+                      </TableCell>
+                      <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the category.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteCategory(item.id)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-64">
-              No data found
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-8 h-8 animate-spin" />
             </div>
           )}
         </div>
       </CardContent>
+      <AlertDialog
+        open={!!editCategory}
+        onOpenChange={(open) => {
+          if (!open) setEditCategory(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Make changes to the category details below.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="edit-name"
+                name="name"
+                value={editCategory?.name || ""}
+                onChange={handleEditInputChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEditCategory(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleEditCategory}>
+              Save changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

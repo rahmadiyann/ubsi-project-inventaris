@@ -5,12 +5,8 @@ const db = prisma;
 
 async function getSuppliers() {
   const suppliers = await db.supplier.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      contact: true,
-      address: true,
+    include: {
+      medicines: true,
     },
   });
 
@@ -135,6 +131,9 @@ async function getMedicines() {
     select: {
       id: true,
       name: true,
+      price: true,
+      dosage: true,
+      expiryDate: true,
       description: true,
       quantity: true,
       stockOpname: true,
@@ -188,6 +187,9 @@ async function updateMedicine(
   id: number,
   name: string,
   description: string,
+  dosage: string,
+  expiryDate: Date,
+  stockOpname: boolean,
   price: number,
   quantity: number
 ) {
@@ -198,9 +200,11 @@ async function updateMedicine(
     data: {
       name: name,
       description: description,
+      dosage: dosage,
+      expiryDate: expiryDate,
       price: price,
       quantity: quantity,
-      stockOpname: false,
+      stockOpname: stockOpname,
     },
   });
 
@@ -250,6 +254,9 @@ async function createTransaction(
   operatorId: number
 ) {
   if (type === "purchase") {
+    console.log(
+      `new purchase of medicineId: ${medicineId}, quantity: ${quantity}`
+    );
     const medicine = await db.medicine.findUnique({
       where: {
         id: medicineId,
@@ -285,6 +292,7 @@ async function createTransaction(
   }
 
   if (type === "sale") {
+    console.log(`new sale of medicineId: ${medicineId}, quantity: ${quantity}`);
     const medicine = await db.medicine.findUnique({
       where: {
         id: medicineId,
@@ -416,7 +424,7 @@ async function deleteOperator(id: number) {
 }
 
 export async function POST(req: NextRequest, res: NextResponse) {
-  const { data } = await req.json();
+  const data = await req.json();
 
   if (!data.actionType) {
     return NextResponse.json(
@@ -455,6 +463,17 @@ export async function POST(req: NextRequest, res: NextResponse) {
   }
 
   if (data.actionType === "transaction") {
+    if (
+      !data.medicineId ||
+      !data.transactionType ||
+      !data.quantity ||
+      !data.operatorId
+    ) {
+      return NextResponse.json(
+        { error: "Missing required fields for transaction" },
+        { status: 400 }
+      );
+    }
     const transaction = await createTransaction(
       data.medicineId,
       data.transactionType,
@@ -468,13 +487,18 @@ export async function POST(req: NextRequest, res: NextResponse) {
 }
 
 export async function PUT(req: NextRequest, res: NextResponse) {
-  const { data } = await req.json();
+  const data = await req.json();
 
-  if (!data.type) {
-    return NextResponse.json({ error: "Type is required" }, { status: 400 });
+  console.log(`req data: ${JSON.stringify(data)}`);
+
+  if (!data.actionType) {
+    return NextResponse.json(
+      { error: "Action type is required" },
+      { status: 400 }
+    );
   }
 
-  if (data.type === "supplier") {
+  if (data.actionType === "supplier") {
     const supplier = await updateSupplier(
       data.id,
       data.name,
@@ -485,28 +509,31 @@ export async function PUT(req: NextRequest, res: NextResponse) {
     return NextResponse.json(supplier, { status: 200 });
   }
 
-  if (data.type === "categorie") {
+  if (data.actionType === "category") {
     const category = await updateCategory(data.id, data.name);
     return NextResponse.json(category, { status: 200 });
   }
 
-  if (data.type === "medicine") {
+  if (data.actionType === "medicine") {
     const medicine = await updateMedicine(
       data.id,
       data.name,
       data.description,
+      data.dosage,
+      data.expiryDate,
+      data.stockOpname,
       data.price,
       data.quantity
     );
     return NextResponse.json(medicine, { status: 200 });
   }
 
-  if (data.type === "transaction") {
+  if (data.actionType === "transaction") {
     const transaction = await updateTransaction(data.id, data.quantity);
     return NextResponse.json(transaction, { status: 200 });
   }
 
-  if (data.type === "operator") {
+  if (data.actionType === "operator") {
     const operator = await updateOperator(
       data.id,
       data.name,
@@ -520,33 +547,33 @@ export async function PUT(req: NextRequest, res: NextResponse) {
 }
 
 export async function DELETE(req: NextRequest, res: NextResponse) {
-  const { data } = await req.json();
+  const data = await req.json();
 
-  if (!data.type) {
+  if (!data.actionType) {
     return NextResponse.json({ error: "Type is required" }, { status: 400 });
   }
 
-  if (data.type === "supplier") {
+  if (data.actionType === "supplier") {
     const supplier = await deleteSupplier(data.id);
     return NextResponse.json(supplier, { status: 200 });
   }
 
-  if (data.type === "category") {
+  if (data.actionType === "category") {
     const category = await deleteCategory(data.id);
     return NextResponse.json(category, { status: 200 });
   }
 
-  if (data.type === "medicine") {
+  if (data.actionType === "medicine") {
     const medicine = await deleteMedicine(data.id);
     return NextResponse.json(medicine, { status: 200 });
   }
 
-  if (data.type === "transaction") {
+  if (data.actionType === "transaction") {
     const transaction = await deleteTransaction(data.id);
     return NextResponse.json(transaction, { status: 200 });
   }
 
-  if (data.type === "operator") {
+  if (data.actionType === "operator") {
     const operator = await deleteOperator(data.id);
     return NextResponse.json(operator, { status: 200 });
   }

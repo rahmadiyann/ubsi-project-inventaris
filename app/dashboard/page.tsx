@@ -16,7 +16,7 @@ import {
   Line,
   Legend,
 } from "recharts";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, RefreshCw } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -43,8 +43,6 @@ interface ChartData {
   medicineNearExpiry: { name: string; expiryDate: string }[];
   inventoryTurnover: { product: string; turnoverRate: number }[];
   profitMargins: { product: string; margin: number }[];
-  bestSellingMedicines: { medicineId: number; totalPrice: number }[];
-  transactionDayOfWeek: { date: string }[];
 }
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
@@ -52,6 +50,7 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 export default function TestingPage() {
   const [data, setData] = useState<ChartData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== "undefined" ? window.innerWidth : 0
   );
@@ -60,12 +59,12 @@ export default function TestingPage() {
   useEffect(() => {
     const determineUser = async () => {
       const role = await getUser();
-      console.log(`role: ${role}`);
       if (!role) {
         router.push("/auth");
-      }
-      if (role === "operator") {
+      } else if (role === "operator") {
         router.push("/admin");
+      } else if (role !== "stakeholder") {
+        router.push("/auth");
       }
     };
 
@@ -79,15 +78,19 @@ export default function TestingPage() {
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const response = await fetch("/api/testing");
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
       const result = await response.json();
+      console.log(JSON.stringify(result.transactionDayOfWeek));
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,20 +98,6 @@ export default function TestingPage() {
     const role = await getAuthCookie("auth");
     return role;
   };
-
-  const transactionDayOfWeekData = useMemo(() => {
-    if (!data) return [];
-
-    const dayCount = data.transactionDayOfWeek.reduce((acc, { date }) => {
-      const day = new Date(date).toLocaleDateString("en-US", {
-        weekday: "long",
-      });
-      acc[day] = (acc[day] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(dayCount).map(([name, value]) => ({ name, value }));
-  }, [data]);
 
   if (error) {
     return (
@@ -123,7 +112,7 @@ export default function TestingPage() {
     );
   }
 
-  if (!data) {
+  if (!data || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin" />
@@ -177,7 +166,10 @@ export default function TestingPage() {
           <Image src="/logo.png" alt="logo" width={100} height={100} />
           <h1 className="text-3xl font-bold mb-0">Dashboard</h1>
         </div>
-        <div>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="icon" onClick={fetchData}>
+            <RefreshCw className="w-4 h-4" />
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="icon">
@@ -266,7 +258,14 @@ export default function TestingPage() {
             {data.transactionTrends.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data.transactionTrends}>
-                  <XAxis dataKey="date" />
+                  <XAxis
+                    dataKey="date"
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
+                    interval={0}
+                    tick={{ fontSize: 12 }}
+                  />
                   <YAxis />
                   <Tooltip />
                   {isMediumScreen && <Legend />}
@@ -291,7 +290,11 @@ export default function TestingPage() {
           <CardContent>
             {data.operatorPerformance.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.operatorPerformance}>
+                <BarChart
+                  data={data.operatorPerformance.sort(
+                    (a, b) => b.transactionCount - a.transactionCount
+                  )}
+                >
                   <XAxis
                     dataKey="name"
                     interval={0}
@@ -427,70 +430,6 @@ export default function TestingPage() {
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Best Selling Medicines</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {data.bestSellingMedicines.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data.bestSellingMedicines.slice(0, 5)}>
-                  <XAxis dataKey="medicineId" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="totalPrice" fill="#8884d8">
-                    {data.bestSellingMedicines
-                      .slice(0, 5)
-                      .map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-center text-gray-500">No data available</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Transaction Day of the Week</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {transactionDayOfWeekData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={transactionDayOfWeekData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    label
-                  >
-                    {transactionDayOfWeekData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-center text-gray-500">No data available</p>
-            )}
           </CardContent>
         </Card>
       </div>

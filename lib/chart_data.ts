@@ -28,12 +28,12 @@ export async function fetchDataForVisualizations() {
   // 3. Transaction Trends
   const transactions = await db.transaction.findMany({
     select: {
-      date: true,
+      createdAt: true,
       totalPrice: true,
     },
   });
   const transactionTrends = transactions.reduce((acc, transaction) => {
-    const date = transaction.date.toISOString().split("T")[0]; // Format date to YYYY-MM-DD
+    const date = transaction.createdAt.toISOString().split("T")[0]; // Format date to YYYY-MM-DD
     if (!acc[date]) {
       acc[date] = 0;
     }
@@ -114,23 +114,6 @@ export async function fetchDataForVisualizations() {
     expiryDate: medicine.expiryDate.toISOString().split("T")[0],
   }));
 
-  // 8. Best selling medicines
-  const bestSellingMedicines = await db.transaction.findMany({
-    select: {
-      medicineId: true,
-    },
-    orderBy: {
-      totalPrice: "desc",
-    },
-  });
-
-  // 9. Transaction Day of the Week best performing
-  const transactionDayOfWeek = await db.transaction.findMany({
-    select: {
-      date: true,
-    },
-  });
-
   return {
     supplierOverview,
     categoryDistribution,
@@ -139,7 +122,5 @@ export async function fetchDataForVisualizations() {
     expiryAnalysis: expiryAnalysisArray,
     priceDistribution: prices,
     medicineNearExpiry: medicineNearExpiryArray,
-    bestSellingMedicines,
-    transactionDayOfWeek,
   };
 }

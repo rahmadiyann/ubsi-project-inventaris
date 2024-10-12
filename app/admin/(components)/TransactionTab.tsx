@@ -69,7 +69,6 @@ interface Medicine {
 export default function TransactionsTab() {
   const [data, setData] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [newTransaction, setNewTransaction] = useState({
     type: "",
     medicineId: "",
@@ -131,11 +130,9 @@ export default function TransactionsTab() {
   };
 
   const fetchData = async () => {
-    setIsLoading(true);
     setData([]);
     const fetchedData = await fetchTabData("transactions");
     setData(fetchedData);
-    setIsLoading(false);
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -171,18 +168,35 @@ export default function TransactionsTab() {
       const response = await fetch("/api/prisma", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actionType: "transaction", ...newTransaction }),
+        body: JSON.stringify({
+          actionType: "transaction",
+          medicineId: newTransaction.medicineId,
+          transactionType: newTransaction.type, // Changed from 'type' to 'transactionType'
+          quantity: newTransaction.quantity,
+          operatorId: parseInt(newTransaction.operatorId),
+        }),
       });
-      if (!response.ok) throw new Error("Failed to add transaction");
-      toast({
-        title: "Success",
-        description: "Transaction added successfully",
-      });
-      fetchData();
+      const data = await response.json();
+      console.log(JSON.stringify(data));
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Transaction added successfully",
+        });
+        fetchData();
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to add transaction",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add transaction",
+        description:
+          error instanceof Error ? error.message : "Failed to add transaction",
         variant: "destructive",
       });
     }
@@ -201,22 +215,26 @@ export default function TransactionsTab() {
   );
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
           <CardTitle className="flex items-center">
             <DollarSign className="mr-2 h-4 w-4" />
             Transactions
           </CardTitle>
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Transaction
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="max-w-[90vw] w-full sm:max-w-lg">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Add New Transaction</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -224,8 +242,8 @@ export default function TransactionsTab() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="type" className="text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                    <Label htmlFor="type" className="sm:text-right">
                       Type
                     </Label>
                     <Select
@@ -233,7 +251,7 @@ export default function TransactionsTab() {
                         handleSelectChange("type", value)
                       }
                     >
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="col-span-1 sm:col-span-3">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -242,8 +260,8 @@ export default function TransactionsTab() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="medicineId" className="text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                    <Label htmlFor="medicineId" className="sm:text-right">
                       Medicine
                     </Label>
                     <Popover>
@@ -251,7 +269,7 @@ export default function TransactionsTab() {
                         <Button
                           variant="outline"
                           role="combobox"
-                          className="col-span-3 justify-between"
+                          className="col-span-1 sm:col-span-3 justify-between"
                         >
                           {selectedMedicine
                             ? selectedMedicine.name
@@ -259,7 +277,7 @@ export default function TransactionsTab() {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[200px] p-0">
+                      <PopoverContent className="w-full p-0">
                         <Command>
                           <CommandInput placeholder="Search medicine..." />
                           <CommandList>
@@ -279,6 +297,14 @@ export default function TransactionsTab() {
                                         selected.id
                                       );
                                       setSelectedMedicine(selected);
+                                      // Close the dropdown
+                                      const popoverTrigger =
+                                        document.querySelector(
+                                          '[role="combobox"]'
+                                        ) as HTMLElement;
+                                      if (popoverTrigger) {
+                                        popoverTrigger.click();
+                                      }
                                     }
                                   }}
                                 >
@@ -300,15 +326,15 @@ export default function TransactionsTab() {
                     </Popover>
                   </div>
                   {selectedMedicine && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label className="text-right">Current Stock</Label>
-                      <div className="col-span-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                      <Label className="sm:text-right">Current Stock</Label>
+                      <div className="col-span-1 sm:col-span-3">
                         {selectedMedicine.quantity}
                       </div>
                     </div>
                   )}
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="quantity" className="text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                    <Label htmlFor="quantity" className="sm:text-right">
                       Quantity
                     </Label>
                     <Input
@@ -318,7 +344,7 @@ export default function TransactionsTab() {
                       value={newTransaction.quantity}
                       onChange={handleInputChange}
                       className={cn(
-                        "col-span-3",
+                        "col-span-1 sm:col-span-3",
                         !isQuantityValid && "border-red-500"
                       )}
                     />
@@ -342,7 +368,12 @@ export default function TransactionsTab() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button onClick={() => fetchData()} variant="outline" size="sm">
+            <Button
+              onClick={() => fetchData()}
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
@@ -355,22 +386,38 @@ export default function TransactionsTab() {
           placeholder="Type in medicine name, type, or operator name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="mb-4"
+          className="mb-4 w-full"
         />
-        <div className="overflow-auto h-64 w-full max-w-4xl mx-auto">
+        <div className="overflow-auto h-[calc(100vh-400px)] w-full">
           {data.length > 0 ? (
-            <div className="relative">
+            <div className="overflow-x-auto">
               <Table className="min-w-full w-full">
-                <TableHeader className="sticky top-0 bg-white z-10">
+                <TableHeader>
                   <TableRow>
-                    <TableHead className="bg-white">Type</TableHead>
-                    <TableHead className="bg-white">Medicine</TableHead>
-                    <TableHead className="bg-white">Quantity</TableHead>
-                    <TableHead className="bg-white">Stock</TableHead>
-                    <TableHead className="bg-white">Price</TableHead>
-                    <TableHead className="bg-white">Total Price</TableHead>
-                    <TableHead className="bg-white">Date</TableHead>
-                    <TableHead className="bg-white">Operator</TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Type
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                      Medicine
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Quantity
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                      Stock
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
+                      Price
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Total Price
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
+                      Date
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden xl:table-cell">
+                      Operator
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -381,26 +428,38 @@ export default function TransactionsTab() {
                     )
                     .map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell>{item.type}</TableCell>
-                        <TableCell>{item.medicine.name}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.medicine.quantity}</TableCell>
-                        <TableCell>{item.medicine.price.toFixed(2)}</TableCell>
-                        <TableCell>{item.totalPrice.toFixed(2)}</TableCell>
-                        <TableCell>{formatDate(item.date)}</TableCell>
-                        <TableCell>{item.operator.name}</TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                          {item.type}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                          {item.medicine.name}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                          {item.quantity}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                          {item.medicine.quantity}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
+                          {item.medicine.price.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                          {item.totalPrice.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
+                          {formatDate(item.date)}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden xl:table-cell">
+                          {item.operator.name}
+                        </TableCell>
                       </TableRow>
                     ))}
                 </TableBody>
               </Table>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-64">
-              {isLoading ? (
-                <Loader2 className="w-8 h-8 animate-spin" />
-              ) : (
-                <p>No data</p>
-              )}
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-8 h-8 animate-spin" />
             </div>
           )}
         </div>

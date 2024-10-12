@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Plus, RefreshCw, Truck } from "lucide-react";
+import { Loader2, Plus, RefreshCw, Truck, Edit, Trash2 } from "lucide-react";
 import { fetchTabData } from "../(utils)/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,14 +30,15 @@ import { useRouter } from "next/navigation";
 export default function SuppliersTab() {
   const [data, setData] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
   const [newSupplier, setNewSupplier] = useState({
     name: "",
+    email: "",
     contact: "",
     address: "",
   });
+  const [editSupplier, setEditSupplier] = useState<any>(null);
+  const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,11 +57,9 @@ export default function SuppliersTab() {
   );
 
   const handleRefresh = async () => {
-    setLoading(true);
     setData([]);
     const fetchedData = await fetchTabData("suppliers");
     setData(fetchedData);
-    setLoading(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,6 +80,8 @@ export default function SuppliersTab() {
         description: "Supplier added successfully",
       });
       handleRefresh();
+      setIsAddSupplierDialogOpen(false);
+      setNewSupplier({ name: "", email: "", contact: "", address: "" });
     } catch (error) {
       toast({
         title: "Error",
@@ -93,23 +94,84 @@ export default function SuppliersTab() {
   const isAddSupplierDisabled =
     !newSupplier.name || !newSupplier.contact || !newSupplier.address;
 
+  const handleEditClick = (supplier: any) => {
+    setEditSupplier(supplier);
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditSupplier((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSupplier = async () => {
+    try {
+      const response = await fetch("/api/prisma", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionType: "supplier", ...editSupplier }),
+      });
+      if (!response.ok) throw new Error("Failed to update supplier");
+      toast({
+        title: "Success",
+        description: "Supplier updated successfully",
+      });
+      handleRefresh();
+      setEditSupplier(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update supplier",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSupplier = async (id: string) => {
+    try {
+      const response = await fetch("/api/prisma", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionType: "supplier", id }),
+      });
+      if (!response.ok) throw new Error("Failed to delete supplier");
+      toast({
+        title: "Success",
+        description: "Supplier deleted successfully",
+      });
+      handleRefresh();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete supplier",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
           <CardTitle className="flex items-center">
             <Truck className="mr-2 h-4 w-4" />
             Suppliers
           </CardTitle>
-          <div className="flex space-x-2">
-            <AlertDialog>
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+            <AlertDialog
+              open={isAddSupplierDialogOpen}
+              onOpenChange={setIsAddSupplierDialogOpen}
+            >
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Supplier
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="max-w-[90vw] w-full sm:max-w-lg">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Add New Supplier</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -125,6 +187,18 @@ export default function SuppliersTab() {
                       id="name"
                       name="name"
                       value={newSupplier.name}
+                      onChange={handleInputChange}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      value={newSupplier.email}
                       onChange={handleInputChange}
                       className="col-span-3"
                     />
@@ -155,7 +229,19 @@ export default function SuppliersTab() {
                   </div>
                 </div>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel
+                    onClick={() => {
+                      setNewSupplier({
+                        name: "",
+                        email: "",
+                        contact: "",
+                        address: "",
+                      });
+                      setIsAddSupplierDialogOpen(false);
+                    }}
+                  >
+                    Cancel
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleAddSupplier}
                     disabled={isAddSupplierDisabled}
@@ -165,7 +251,12 @@ export default function SuppliersTab() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button variant="outline" size="sm" onClick={handleRefresh}>
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
@@ -178,41 +269,179 @@ export default function SuppliersTab() {
           placeholder="Search suppliers..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="mb-4"
+          className="mb-4 w-full"
         />
-        <div className="overflow-auto h-64 w-full max-w-4xl mx-auto">
+        <div className="overflow-auto h-[calc(100vh-400px)] w-full">
           {data.length > 0 ? (
-            <Table className="min-w-full w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Address</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredData.map((item) => (
-                  <TableRow
-                    onClick={() => router.push(`/admin/suppliers/${item.id}`)}
-                    key={item.id}
-                    className="cursor-pointer"
-                  >
-                    <TableCell>{item.id}</TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>{item.contact}</TableCell>
-                    <TableCell>{item.address}</TableCell>
+            <div className="overflow-x-auto">
+              <Table className="min-w-full w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Name
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Email
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                      Contact
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
+                      Address
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Medicines
+                    </TableHead>
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredData
+                    .sort((a, b) => a.id - b.id)
+                    .map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                          {item.name}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                          {item.email}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                          {item.contact}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
+                          {item.address}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                          {item.medicines
+                            .map((medicine: any) => medicine.name)
+                            .join(", ")}
+                        </TableCell>
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditClick(item)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Are you sure?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will
+                                  permanently delete the supplier.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteSupplier(item.id)}
+                                  className="bg-red-500 hover:bg-red-600"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex items-center justify-center h-full">
               <Loader2 className="w-8 h-8 animate-spin" />
             </div>
           )}
         </div>
       </CardContent>
+      <AlertDialog
+        open={!!editSupplier}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditSupplier(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Supplier</AlertDialogTitle>
+            <AlertDialogDescription>
+              Make changes to the supplier details below.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="edit-name"
+                name="name"
+                value={editSupplier?.name || ""}
+                onChange={handleEditInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="edit-email"
+                name="email"
+                value={editSupplier?.email || ""}
+                onChange={handleEditInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-contact" className="text-right">
+                Contact
+              </Label>
+              <Input
+                id="edit-contact"
+                name="contact"
+                value={editSupplier?.contact || ""}
+                onChange={handleEditInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-address" className="text-right">
+                Address
+              </Label>
+              <Input
+                id="edit-address"
+                name="address"
+                value={editSupplier?.address || ""}
+                onChange={handleEditInputChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEditSupplier(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleEditSupplier}>
+              Save changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
