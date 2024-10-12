@@ -53,7 +53,6 @@ model Transaction {
   medicineId Int
   quantity   Int
   totalPrice Float
-  date       DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   medicine   Medicine @relation(fields: [medicineId], references: [id])

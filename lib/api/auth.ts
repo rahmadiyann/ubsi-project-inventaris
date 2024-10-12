@@ -1,6 +1,9 @@
-import { PrismaClient } from '@prisma/client';
-import { hash, compare} from 'bcrypt';
-import jwt from 'jsonwebtoken';
+"use server";
+
+import { PrismaClient } from "@prisma/client";
+import { hash, compare } from "bcrypt";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
 const prisma = new PrismaClient();
 
@@ -20,14 +23,16 @@ export async function authenticateUser(
   email: string,
   password: string,
   isRegistration: boolean,
-  name?: string,
+  name?: string
 ): Promise<AuthResult> {
   try {
     if (isRegistration) {
       // Check if user already exists
-      const existingUser = await prisma.operator.findUnique({ where: { email } });
+      const existingUser = await prisma.operator.findUnique({
+        where: { email },
+      });
       if (existingUser) {
-        return { success: false, message: 'User already exists' };
+        return { success: false, message: "User already exists" };
       }
 
       // Hash the password
@@ -42,11 +47,13 @@ export async function authenticateUser(
         },
       });
 
-      const token = jwt.sign({ userId: newUser.id }, process.env.JWT_SECRET!, { expiresIn: '1d' });
+      const token = jwt.sign({ userId: newUser.id }, process.env.JWT_SECRET!, {
+        expiresIn: "1d",
+      });
 
       return {
         success: true,
-        message: 'User registered successfully',
+        message: "User registered successfully",
         token,
         user: {
           id: newUser.id,
@@ -59,20 +66,29 @@ export async function authenticateUser(
       // Login
       const user = await prisma.operator.findUnique({ where: { email } });
       if (!user) {
-        return { success: false, message: 'User not found' };
+        return { success: false, message: "User not found" };
       }
 
       const isPasswordValid = await compare(password, user.password);
       if (!isPasswordValid) {
-        return { success: false, message: 'Invalid password' };
+        return { success: false, message: "Invalid password" };
       }
 
-      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '1d' });
+      const token = jwt.sign(
+        {
+          userName: user.name,
+          userId: user.id,
+          userRole: user.role,
+        },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1d" }
+      );
 
+      cookies().set("token", token);
 
       return {
         success: true,
-        message: 'Login successful',
+        message: "Login successful",
         token,
         user: {
           id: user.id,
@@ -83,8 +99,28 @@ export async function authenticateUser(
       };
     }
   } catch (error) {
-    return { success: false, message: 'An error occurred during authentication' };
+    return {
+      success: false,
+      message: "An error occurred during authentication",
+    };
   } finally {
     await prisma.$disconnect();
   }
+}
+
+export async function getUser(): Promise<any | null> {
+  const token = await cookies().get("token")?.value;
+  if (!token) {
+    return null;
+  }
+  const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+    userName: string;
+    userId: number;
+    userRole: string;
+  };
+  return decoded;
+}
+
+export async function deleteCookie(name: string) {
+  cookies().delete(name);
 }

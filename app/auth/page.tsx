@@ -67,13 +67,10 @@ const AuthPage: React.FC = () => {
           role: user.user.role,
         };
 
-        document.cookie = `auth=${userData.role}; path=/; max-age=86400; secure; samesite=strict`;
-        document.cookie = `operatorId=${user.user.id}; path=/; max-age=86400; secure; samesite=strict`;
-
-        if (userData.role === "operator") {
-          router.push("/admin");
-        } else {
+        if (userData.role === "stakeholder") {
           router.push("/dashboard");
+        } else {
+          router.push("/admin");
         }
       } else {
         toast({

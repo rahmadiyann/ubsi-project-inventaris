@@ -27,15 +27,16 @@ import TransactionsTab from "./(components)/TransactionTab";
 import SuppliersTab from "./(components)/SuppliersTab";
 import CategoriesTab from "./(components)/CategoriesTab";
 import MedicinesTab from "./(components)/MedicinesTab";
-import OperatorsTab from "./(components)/OperatorsTab";
+import UsersTab from "./(components)/UsersTab";
 import { TabKey } from "@/app/admin/(utils)/api";
+import { deleteCookie, getUser } from "@/lib/api/auth";
 
 const tabContent: Record<TabKey, React.ReactNode> = {
   transactions: <TransactionsTab />,
   suppliers: <SuppliersTab />,
   categories: <CategoriesTab />,
   medicines: <MedicinesTab />,
-  operators: <OperatorsTab />,
+  users: <UsersTab />,
 };
 
 const TabIcon: React.FC<{ tab: TabKey }> = ({ tab }) => {
@@ -44,7 +45,7 @@ const TabIcon: React.FC<{ tab: TabKey }> = ({ tab }) => {
     categories: <Layers className="mr-2 h-4 w-4" />,
     medicines: <Pill className="mr-2 h-4 w-4" />,
     transactions: <DollarSign className="mr-2 h-4 w-4" />,
-    operators: <Users className="mr-2 h-4 w-4" />,
+    users: <Users className="mr-2 h-4 w-4" />,
   };
   return icons[tab] || null;
 };
@@ -52,15 +53,17 @@ const TabIcon: React.FC<{ tab: TabKey }> = ({ tab }) => {
 export default function AdminUI() {
   const [activeTab, setActiveTab] = useState<TabKey>("transactions");
   const [loading, setLoading] = useState(true);
+  const [userDataState, setUserDataState] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
-      const role = await getUser();
-      if (!role) {
+      const userData = await getUserData();
+      setUserDataState(userData);
+      if (!userData) {
         router.push("/auth");
       }
-      if (role === "stakeholder") {
+      if (userData.userRole === "stakeholder") {
         router.push("/dashboard");
       } else {
         setLoading(false);
@@ -70,35 +73,21 @@ export default function AdminUI() {
     fetchUser();
   }, []);
 
-  async function getAuthCookie(): Promise<string | null> {
-    const cookies = document.cookie.split(";");
-    for (let cookie of cookies) {
-      const [name, value] = cookie.trim().split("=");
-      if (name === "auth") {
-        return decodeURIComponent(value);
-      }
-    }
-    return null;
-  }
-
-  const getUser = async () => {
-    const role = await getAuthCookie();
-    return role;
+  const getUserData = async () => {
+    const userData = await getUser();
+    return userData;
   };
 
-  function clearCookies() {
-    const cookies = document.cookie.split(";");
-
-    for (let cookie of cookies) {
-      const cookieName = cookie.split("=")[0].trim();
-      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-    }
+  async function clearCookies() {
+    await deleteCookie("token");
   }
 
   const signOut = () => {
     clearCookies();
     router.push("/auth");
   };
+
+  const name = userDataState?.userName;
 
   return loading ? (
     <div className="flex items-center justify-center h-screen">
@@ -108,15 +97,20 @@ export default function AdminUI() {
     <div className="flex flex-col h-screen items-center justify-center container mx-auto p-4">
       <div className="w-full max-w-4xl mb-6">
         <div className="flex flex-row items-center justify-between w-full mb-6 px-0">
-          <div className="flex-shrink-0">
-            <Image
-              src="/logo.png"
-              alt="logo"
-              width={100}
-              height={100}
-              className="object-fit"
-              style={{ background: "transparent" }}
-            />
+          <div className="flex items-center">
+            <div className="flex-shrink-0 mr-4">
+              <Image
+                src="/logo.png"
+                alt="logo"
+                width={100}
+                height={100}
+                className="object-fit"
+                style={{ background: "transparent" }}
+              />
+            </div>
+            <div className="text-xl font-semibold">
+              Welcome, {name.split(" ")[0]}
+            </div>
           </div>
           <div>
             <AlertDialog>

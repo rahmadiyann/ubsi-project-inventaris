@@ -1,4 +1,6 @@
 import prisma from "@/lib/db";
+import { randomBytes } from "crypto";
+import { hash } from "bcrypt";
 import { NextRequest, NextResponse } from "next/server";
 
 const db = prisma;
@@ -228,7 +230,7 @@ async function getTransactions() {
       type: true,
       quantity: true,
       totalPrice: true,
-      date: true,
+      createdAt: true,
       operator: {
         select: {
           name: true,
@@ -274,7 +276,6 @@ async function createTransaction(
         quantity: quantity,
         operatorId: operatorId,
         totalPrice: quantity * medicine.price,
-        date: new Date(),
       },
     });
 
@@ -317,7 +318,6 @@ async function createTransaction(
         quantity: quantity,
         operatorId: operatorId,
         totalPrice: quantity * medicine.price,
-        date: new Date(),
       },
     });
 
@@ -370,7 +370,7 @@ async function deleteTransaction(id: number) {
   return transaction;
 }
 
-async function getOperators() {
+async function getUsers() {
   const operators = await db.operator.findMany({
     select: {
       id: true,
@@ -383,7 +383,7 @@ async function getOperators() {
   return operators;
 }
 
-async function getOperator(id: number) {
+async function getUser(id: number) {
   const operator = await db.operator.findUnique({
     where: {
       id: id,
@@ -393,7 +393,25 @@ async function getOperator(id: number) {
   return operator;
 }
 
-async function updateOperator(
+async function createUser(
+  name: string,
+  email: string,
+  role: string,
+  password: string
+) {
+  const operator = await db.operator.create({
+    data: {
+      name: name,
+      email: email,
+      role: role,
+      password: password,
+    },
+  });
+
+  return operator;
+}
+
+async function updateUser(
   id: number,
   name: string,
   email: string,
@@ -413,7 +431,7 @@ async function updateOperator(
   return operator;
 }
 
-async function deleteOperator(id: number) {
+async function deleteUser(id: number) {
   const operator = await db.operator.delete({
     where: {
       id: id,
@@ -431,6 +449,18 @@ export async function POST(req: NextRequest, res: NextResponse) {
       { error: "Action type is required" },
       { status: 400 }
     );
+  }
+
+  if (data.actionType === "operator") {
+    const password =
+      data.name.toLowerCase() + data.email.split("@")[0].toLowerCase();
+    const operator = await createUser(
+      data.name,
+      data.email,
+      data.role,
+      await hash(password, 10)
+    );
+    return NextResponse.json({ ...operator, password }, { status: 200 });
   }
 
   if (data.actionType === "supplier") {
@@ -489,8 +519,6 @@ export async function POST(req: NextRequest, res: NextResponse) {
 export async function PUT(req: NextRequest, res: NextResponse) {
   const data = await req.json();
 
-  console.log(`req data: ${JSON.stringify(data)}`);
-
   if (!data.actionType) {
     return NextResponse.json(
       { error: "Action type is required" },
@@ -534,13 +562,8 @@ export async function PUT(req: NextRequest, res: NextResponse) {
   }
 
   if (data.actionType === "operator") {
-    const operator = await updateOperator(
-      data.id,
-      data.name,
-      data.email,
-      data.role
-    );
-    return NextResponse.json(operator, { status: 200 });
+    const user = await updateUser(data.id, data.name, data.email, data.role);
+    return NextResponse.json(user, { status: 200 });
   }
 
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });
@@ -548,6 +571,7 @@ export async function PUT(req: NextRequest, res: NextResponse) {
 
 export async function DELETE(req: NextRequest, res: NextResponse) {
   const data = await req.json();
+  console.log(JSON.stringify(data, null, 2));
 
   if (!data.actionType) {
     return NextResponse.json({ error: "Type is required" }, { status: 400 });
@@ -574,8 +598,8 @@ export async function DELETE(req: NextRequest, res: NextResponse) {
   }
 
   if (data.actionType === "operator") {
-    const operator = await deleteOperator(data.id);
-    return NextResponse.json(operator, { status: 200 });
+    const user = await deleteUser(data.id);
+    return NextResponse.json(user, { status: 200 });
   }
 
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });
@@ -611,9 +635,9 @@ export async function GET(req: NextRequest, res: NextResponse) {
       return NextResponse.json(transaction, { status: 200 });
     }
 
-    if (type === "operator") {
-      const operator = await getOperator(Number(id));
-      return NextResponse.json(operator, { status: 200 });
+    if (type === "user") {
+      const user = await getUser(Number(id));
+      return NextResponse.json(user, { status: 200 });
     }
   }
 
@@ -637,9 +661,9 @@ export async function GET(req: NextRequest, res: NextResponse) {
     return NextResponse.json(transactions, { status: 200 });
   }
 
-  if (type === "operators") {
-    const operators = await getOperators();
-    return NextResponse.json(operators, { status: 200 });
+  if (type === "users") {
+    const users = await getUsers();
+    return NextResponse.json(users, { status: 200 });
   }
 
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });

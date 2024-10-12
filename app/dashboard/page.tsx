@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { getAuthCookie } from "@/lib/getcookie";
+import { getUser } from "@/lib/api/auth";
 
 interface ChartData {
   supplierOverview: { name: string; medicineCount: number }[];
@@ -51,6 +51,7 @@ export default function TestingPage() {
   const [data, setData] = useState<ChartData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<any>(null);
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== "undefined" ? window.innerWidth : 0
   );
@@ -58,12 +59,12 @@ export default function TestingPage() {
 
   useEffect(() => {
     const determineUser = async () => {
-      const role = await getUser();
-      if (!role) {
+      const userData = await getUserData();
+      if (!userData) {
         router.push("/auth");
-      } else if (role === "operator") {
+      } else if (userData.userRole === "operator") {
         router.push("/admin");
-      } else if (role !== "stakeholder") {
+      } else if (userData.userRole !== "stakeholder") {
         router.push("/auth");
       }
     };
@@ -85,7 +86,6 @@ export default function TestingPage() {
         throw new Error("Failed to fetch data");
       }
       const result = await response.json();
-      console.log(JSON.stringify(result.transactionDayOfWeek));
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -94,9 +94,9 @@ export default function TestingPage() {
     }
   };
 
-  const getUser = async () => {
-    const role = await getAuthCookie("auth");
-    return role;
+  const getUserData = async () => {
+    const userData = await getUser();
+    return userData;
   };
 
   if (error) {

@@ -49,6 +49,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
+import { getUser } from "@/lib/api/auth";
 
 // Add these interfaces
 interface Supplier {
@@ -66,6 +67,7 @@ export default function MedicinesTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [userData, setUserData] = useState<any>(null);
   const [newMedicine, setNewMedicine] = useState({
     name: "",
     description: "",
@@ -80,6 +82,13 @@ export default function MedicinesTab() {
   const [editMedicine, setEditMedicine] = useState<any>(null);
 
   useEffect(() => {
+    const checkUser = async () => {
+      const user = await getUser();
+      if (user) {
+        setUserData(user);
+      }
+    };
+    checkUser();
     const fetchData = async () => {
       const fetchedData = await fetchTabData("medicines");
       setData(fetchedData);
@@ -261,6 +270,8 @@ export default function MedicinesTab() {
     }
   };
 
+  const isViewer = userData && userData.userRole === "viewer";
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -276,6 +287,7 @@ export default function MedicinesTab() {
                   variant="outline"
                   size="sm"
                   className="w-full sm:w-auto"
+                  disabled={isViewer}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Medicine
@@ -477,13 +489,13 @@ export default function MedicinesTab() {
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
                       Expiry Date
                     </TableHead>
-                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
                       Description
                     </TableHead>
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
                       Stock
                     </TableHead>
-                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
                       SO Status
                     </TableHead>
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
@@ -508,18 +520,19 @@ export default function MedicinesTab() {
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
                           {format(new Date(item.expiryDate), "PPP")}
                         </TableCell>
-                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
                           {item.description}
                         </TableCell>
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
                           {item.quantity}
                         </TableCell>
-                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
                           <Switch
                             checked={item.stockOpname}
                             onCheckedChange={(checked) => {
                               handleStockOpnameChange(item.id, checked);
                             }}
+                            disabled={isViewer}
                           />
                         </TableCell>
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
@@ -527,12 +540,17 @@ export default function MedicinesTab() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditClick(item)}
+                            disabled={isViewer}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={isViewer}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getUser } from "@/lib/api/auth";
 
 export default function CategoriesTab() {
   const [data, setData] = useState<any[]>([]);
@@ -34,9 +35,17 @@ export default function CategoriesTab() {
   });
   const [editCategory, setEditCategory] = useState<any>(null);
   const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    const checkUser = async () => {
+      const user = await getUser();
+      if (user) {
+        setUserData(user);
+      }
+    };
+    checkUser();
     const fetchData = async () => {
       const fetchedData = await fetchTabData("categories");
       setData(fetchedData);
@@ -143,6 +152,8 @@ export default function CategoriesTab() {
     }
   };
 
+  const isViewer = userData && userData.userRole === "viewer";
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -164,6 +175,7 @@ export default function CategoriesTab() {
                   variant="outline"
                   size="sm"
                   className="w-full sm:w-auto"
+                  disabled={isViewer}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Category
@@ -194,7 +206,7 @@ export default function CategoriesTab() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleAddCategory}
-                    disabled={isAddCategoryDisabled}
+                    disabled={isAddCategoryDisabled || isViewer}
                   >
                     Add Category
                   </AlertDialogAction>
@@ -260,12 +272,17 @@ export default function CategoriesTab() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditClick(item)}
+                          disabled={isViewer}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={isViewer}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>

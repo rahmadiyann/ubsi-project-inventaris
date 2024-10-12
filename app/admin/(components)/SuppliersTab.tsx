@@ -26,6 +26,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { getUser } from "@/lib/api/auth";
 
 export default function SuppliersTab() {
   const [data, setData] = useState<any[]>([]);
@@ -39,12 +40,20 @@ export default function SuppliersTab() {
   const [editSupplier, setEditSupplier] = useState<any>(null);
   const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
   const { toast } = useToast();
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
+    const checkUser = async () => {
+      const user = await getUser();
+      if (user) {
+        setUserData(user);
+      }
+    };
     const fetchData = async () => {
       const fetchedData = await fetchTabData("suppliers");
       setData(fetchedData);
     };
+    checkUser();
     fetchData();
   }, []);
 
@@ -148,6 +157,8 @@ export default function SuppliersTab() {
     }
   };
 
+  const isViewer = userData && userData.userRole === "viewer";
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -166,6 +177,7 @@ export default function SuppliersTab() {
                   variant="outline"
                   size="sm"
                   className="w-full sm:w-auto"
+                  disabled={isViewer}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Supplier
@@ -280,13 +292,13 @@ export default function SuppliersTab() {
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
                       Name
                     </TableHead>
-                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                       Email
                     </TableHead>
-                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                       Contact
                     </TableHead>
-                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                       Address
                     </TableHead>
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
@@ -305,13 +317,13 @@ export default function SuppliersTab() {
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
                           {item.name}
                         </TableCell>
-                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                           {item.email}
                         </TableCell>
-                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                           {item.contact}
                         </TableCell>
-                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                           {item.address}
                         </TableCell>
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
@@ -324,12 +336,17 @@ export default function SuppliersTab() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditClick(item)}
+                            disabled={isViewer}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={isViewer}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>

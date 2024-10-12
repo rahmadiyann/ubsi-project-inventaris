@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getAuthCookie } from "@/lib/getcookie";
+import { getUser } from "@/lib/api/auth";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -81,8 +81,19 @@ export default function TransactionsTab() {
   );
   const [isQuantityValid, setIsQuantityValid] = useState(true);
   const { toast } = useToast();
+  const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
+    const checkUser = async () => {
+      const user = await getUser();
+      if (user) {
+        setUserData(user);
+        setNewTransaction((prev) => ({
+          ...prev,
+          operatorId: user.userId,
+        }));
+      }
+    };
     const fetchData = async () => {
       const fetchedData = await fetchTabData("transactions");
       setData(fetchedData);
@@ -91,18 +102,9 @@ export default function TransactionsTab() {
       const medicinesData = await fetchTabData("medicines");
       setMedicines(medicinesData);
     };
+    checkUser();
     fetchData();
     fetchMedicines();
-  }, []);
-
-  useEffect(() => {
-    const getOperatorId = async () => {
-      const operatorId = await getAuthCookie("operatorId");
-      if (operatorId) {
-        setNewTransaction((prev) => ({ ...prev, operatorId }));
-      }
-    };
-    getOperatorId();
   }, []);
 
   const filteredData = data.filter((item) =>
@@ -177,12 +179,12 @@ export default function TransactionsTab() {
         }),
       });
       const data = await response.json();
-      console.log(JSON.stringify(data));
 
       if (response.ok) {
         toast({
           title: "Success",
           description: "Transaction added successfully",
+          variant: "default",
         });
         fetchData();
       } else {
@@ -214,6 +216,8 @@ export default function TransactionsTab() {
     }
   );
 
+  const isViewer = userData && userData.userRole === "viewer";
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -229,6 +233,7 @@ export default function TransactionsTab() {
                   variant="outline"
                   size="sm"
                   className="w-full sm:w-auto"
+                  disabled={isViewer}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Transaction
@@ -397,13 +402,13 @@ export default function TransactionsTab() {
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
                       Type
                     </TableHead>
-                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
                       Medicine
                     </TableHead>
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2">
                       Quantity
                     </TableHead>
-                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
                       Stock
                     </TableHead>
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
@@ -415,7 +420,7 @@ export default function TransactionsTab() {
                     <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                       Date
                     </TableHead>
-                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden xl:table-cell">
+                    <TableHead className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                       Operator
                     </TableHead>
                   </TableRow>
@@ -431,13 +436,13 @@ export default function TransactionsTab() {
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
                           {item.type}
                         </TableCell>
-                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
                           {item.medicine.name}
                         </TableCell>
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2">
                           {item.quantity}
                         </TableCell>
-                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden sm:table-cell">
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
                           {item.medicine.quantity}
                         </TableCell>
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden md:table-cell">
@@ -447,9 +452,9 @@ export default function TransactionsTab() {
                           {item.totalPrice.toFixed(2)}
                         </TableCell>
                         <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
-                          {formatDate(item.date)}
+                          {formatDate(item.createdAt)}
                         </TableCell>
-                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden xl:table-cell">
+                        <TableCell className="px-2 py-1 sm:px-4 sm:py-2 hidden lg:table-cell">
                           {item.operator.name}
                         </TableCell>
                       </TableRow>

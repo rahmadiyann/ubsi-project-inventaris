@@ -3,7 +3,7 @@ export type TabKey =
   | "suppliers"
   | "categories"
   | "medicines"
-  | "operators";
+  | "users";
 
 export async function fetchTabData(tab: TabKey): Promise<any[]> {
   try {
