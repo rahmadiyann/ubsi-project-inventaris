@@ -171,7 +171,6 @@ export default function UsersTab() {
   };
 
   const isAdmin = userData && userData.userRole === "admin";
-  const isOperator = userData && userData.userRole === "operator";
 
   return (
     <Card className="w-full">

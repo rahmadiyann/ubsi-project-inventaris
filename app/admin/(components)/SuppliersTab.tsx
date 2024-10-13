@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
 import { getUser } from "@/lib/api/auth";
 
 export default function SuppliersTab() {

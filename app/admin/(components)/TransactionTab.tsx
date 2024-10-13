@@ -58,6 +58,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Define an interface for the Medicine type
 interface Medicine {
@@ -82,6 +90,10 @@ export default function TransactionsTab() {
   const [isQuantityValid, setIsQuantityValid] = useState(true);
   const { toast } = useToast();
   const [userData, setUserData] = useState<any>(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -112,6 +124,12 @@ export default function TransactionsTab() {
       value.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
+  // Pagination logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -426,10 +444,11 @@ export default function TransactionsTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredData
+                  {currentItems
                     .sort(
                       (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                        new Date(b.createdAt).getTime() -
+                        new Date(a.createdAt).getTime()
                     )
                     .map((item) => (
                       <TableRow key={item.id}>
@@ -468,6 +487,32 @@ export default function TransactionsTab() {
             </div>
           )}
         </div>
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              />
+            </PaginationItem>
+            {[...Array(totalPages)].map((_, index) => (
+              <PaginationItem key={index}>
+                <PaginationLink
+                  onClick={() => setCurrentPage(index + 1)}
+                  isActive={currentPage === index + 1}
+                >
+                  {index + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </CardContent>
     </Card>
   );

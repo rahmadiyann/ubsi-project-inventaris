@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { getUser } from "@/lib/api/auth";
+import { deleteCookie, getUser } from "@/lib/api/auth";
 
 interface ChartData {
   supplierOverview: { name: string; medicineCount: number }[];
@@ -47,11 +47,10 @@ interface ChartData {
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
-export default function TestingPage() {
+export default function DashboardPage() {
   const [data, setData] = useState<ChartData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [user, setUser] = useState<any>(null);
   const [windowWidth, setWindowWidth] = useState<number>(
     typeof window !== "undefined" ? window.innerWidth : 0
   );
@@ -145,17 +144,12 @@ export default function TestingPage() {
     );
   };
 
-  function clearCookies() {
-    const cookies = document.cookie.split(";");
-
-    for (let cookie of cookies) {
-      const cookieName = cookie.split("=")[0].trim();
-      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-    }
+  async function clearCookies() {
+    await deleteCookie("token");
   }
 
-  const signOut = () => {
-    clearCookies();
+  const signOut = async () => {
+    await clearCookies();
     router.push("/auth");
   };
 
@@ -163,7 +157,7 @@ export default function TestingPage() {
     <div className="container mx-auto p-4">
       <div className="flex flex-row justify-between items-center mb-4">
         <div className="flex flex-row items-center">
-          <Image src="/logo.png" alt="logo" width={100} height={100} />
+          <Image src="/logo.png" alt="logo" width={40} height={40} />
           <h1 className="text-3xl font-bold mb-0">Dashboard</h1>
         </div>
         <div className="flex space-x-2">

@@ -1,5 +1,4 @@
 import prisma from "@/lib/db";
-import { randomBytes } from "crypto";
 import { hash } from "bcrypt";
 import { NextRequest, NextResponse } from "next/server";
 

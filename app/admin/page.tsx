@@ -102,8 +102,8 @@ export default function AdminUI() {
               <Image
                 src="/logo.png"
                 alt="logo"
-                width={100}
-                height={100}
+                width={40}
+                height={40}
                 className="object-fit"
                 style={{ background: "transparent" }}
               />
