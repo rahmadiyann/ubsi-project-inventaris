@@ -53,20 +53,30 @@ const TabIcon: React.FC<{ tab: TabKey }> = ({ tab }) => {
 export default function AdminUI() {
   const [activeTab, setActiveTab] = useState<TabKey>("transactions");
   const [loading, setLoading] = useState(true);
-  const [userDataState, setUserDataState] = useState<any>(null);
+  const [userDataState, setUserDataState] = useState<{
+    userName: string;
+    userId: number;
+    userRole: string;
+  } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
-      const userData = await getUserData();
-      setUserDataState(userData);
-      if (!userData) {
+      const user = await getUserData();
+      console.log(user);
+      setUserDataState(user);
+      if (!user) {
+        console.log("User not found");
         router.push("/auth");
-      }
-      if (userData.userRole === "stakeholder") {
+      } else if (["viewer", "operator", "admin"].includes(user.userRole)) {
+        console.log("User is viewer, operator, or admin");
+        setLoading(false);
+      } else if (user.userRole === "stakeholder") {
+        console.log("User is stakeholder");
         router.push("/dashboard");
       } else {
-        setLoading(false);
+        console.log("Unknown user role");
+        router.push("/auth");
       }
     };
 
@@ -74,8 +84,8 @@ export default function AdminUI() {
   }, []);
 
   const getUserData = async () => {
-    const userData = await getUser();
-    return userData;
+    const user = await getUser();
+    return user;
   };
 
   async function clearCookies() {
@@ -109,7 +119,7 @@ export default function AdminUI() {
               />
             </div>
             <div className="text-xl font-semibold">
-              Welcome, {name.split(" ")[0]}
+              Welcome, {name?.split(" ")[0]}
             </div>
           </div>
           <div>

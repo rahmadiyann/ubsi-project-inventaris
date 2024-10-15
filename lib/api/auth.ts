@@ -108,7 +108,11 @@ export async function authenticateUser(
   }
 }
 
-export async function getUser(): Promise<any | null> {
+export async function getUser(): Promise<{
+  userName: string;
+  userId: number;
+  userRole: string;
+} | null> {
   const token = await cookies().get("token")?.value;
   if (!token) {
     return null;
@@ -119,6 +123,10 @@ export async function getUser(): Promise<any | null> {
     userRole: string;
   };
   return decoded;
+}
+
+export async function cookieExists(name: string): Promise<boolean> {
+  return await cookies().has(name);
 }
 
 export async function deleteCookie(name: string) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -26,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { cookieExists, deleteCookie } from "@/lib/api/auth";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -51,6 +52,19 @@ const AuthPage: React.FC = () => {
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
   });
+
+  async function clearCookies() {
+    const exists = await cookieExists("token");
+    if (exists) {
+      await deleteCookie("token");
+    } else {
+      return;
+    }
+  }
+
+  useEffect(() => {
+    clearCookies();
+  }, []);
 
   async function onLogin(data: z.infer<typeof loginSchema>) {
     setIsLoading(true);

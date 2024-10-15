@@ -49,6 +49,11 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 export default function DashboardPage() {
   const [data, setData] = useState<ChartData | null>(null);
+  const [userData, setUserData] = useState<{
+    userName: string;
+    userId: number;
+    userRole: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [windowWidth, setWindowWidth] = useState<number>(
@@ -58,14 +63,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const determineUser = async () => {
-      const userData = await getUserData();
-      if (!userData) {
+      const user = await getUserData();
+      if (!user) {
         router.push("/auth");
-      } else if (userData.userRole === "operator") {
+      } else if (user.userRole === "operator") {
         router.push("/admin");
-      } else if (userData.userRole !== "stakeholder") {
+      } else if (user.userRole !== "stakeholder") {
         router.push("/auth");
       }
+
+      setUserData(user);
     };
 
     determineUser();
@@ -80,7 +87,7 @@ export default function DashboardPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/testing");
+      const response = await fetch("/api/dashboard");
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -94,8 +101,8 @@ export default function DashboardPage() {
   };
 
   const getUserData = async () => {
-    const userData = await getUser();
-    return userData;
+    const user = await getUser();
+    return user;
   };
 
   if (error) {
@@ -153,12 +160,14 @@ export default function DashboardPage() {
     router.push("/auth");
   };
 
+  const userName = userData?.userName;
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex flex-row justify-between items-center mb-4">
-        <div className="flex flex-row items-center">
+        <div className="flex flex-row items-center gap-2">
           <Image src="/logo.png" alt="logo" width={40} height={40} />
-          <h1 className="text-3xl font-bold mb-0">Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-0">Welcome, {userName}</h1>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" size="icon" onClick={fetchData}>

@@ -271,9 +271,11 @@ export default function MedicinesTab() {
         )
       );
 
+      const item = data.find((item) => item.id === id);
+
       toast({
         title: "Success",
-        description: `Stock Opname status updated for ${id}`,
+        description: `Stock Opname status updated for ${item.name}`,
       });
     } catch (error) {
       console.error("Error updating stock opname status:", error);
