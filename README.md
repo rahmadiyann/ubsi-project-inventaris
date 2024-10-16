@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pharmacin: Revolutionizing Pharmacy Inventory Management
 
-## Getting Started
+![Pharmacin Logo](/public/logo.png)
 
-First, run the development server:
+Pharmacin is a cutting-edge web application designed to streamline pharmacy inventory management, enhance operational efficiency, and improve patient care. Built with Next.js, Prisma, and PostgreSQL, this full-stack solution offers a comprehensive set of features for pharmacies of all sizes.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🌟 Key Features
+
+- **Intuitive Dashboard**: Real-time insights into inventory levels, sales trends, and expiry dates.
+- **User Management**: Role-based access control for administrators, operators, and stakeholders.
+- **Inventory Tracking**: Effortlessly manage medicines, suppliers, and categories.
+- **Transaction Management**: Record and analyze sales and purchases with ease.
+- **Data Visualization**: Interactive charts and graphs for better decision-making.
+- **Responsive Design**: Seamless experience across desktop and mobile devices.
+
+## 🚀 Technology Stack
+
+- **Frontend**: Next.js, React, Tailwind CSS
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Database**: PostgreSQL
+- **Authentication**: JWT (JSON Web Tokens)
+- **Charting**: Recharts
+- **Form Handling**: React Hook Form
+- **Validation**: Zod
+
+## 🏗️ Project Structure
+
+```
+pharmacin/
+├── app/
+│   ├── admin/
+│   ├── api/
+│   ├── auth/
+│   ├── dashboard/
+│   └── ...
+├── components/
+├── lib/
+├── public/
+├── prisma/
+├── .env
+└── README.md
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 Setup and Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up your environment variables in `.env`
+4. Run Prisma migrations: `npx prisma migrate dev`
+5. Start the development server: `npm run dev`
+6. Open `http://localhost:3000` in your browser
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔐 Authentication
 
-## Learn More
+Pharmacin uses JWT for secure authentication. The core authentication logic can be found in:
 
-To learn more about Next.js, take a look at the following resources:
+- `/app/api/auth/route.ts`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📊 Dashboard
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The dashboard provides a comprehensive overview of the pharmacy's operations utilizing Recharts for data visualization.
 
-## Deploy on Vercel
+## 🤝 Contributing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+We welcome contributions to Pharmacin! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 License
+
+Pharmacin is released under the [MIT License](LICENSE).
+
+---
+
+Pharmacin - Empowering pharmacies with intelligent inventory management.
