@@ -102,7 +102,7 @@ export default function TransactionsTab() {
         setUserData(user);
         setNewTransaction((prev) => ({
           ...prev,
-          operatorId: user.userId,
+          operatorId: user.userId.toString(),
         }));
       }
     };
