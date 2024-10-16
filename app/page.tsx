@@ -81,7 +81,7 @@ const LandingPage = () => {
               Contact
             </Button>
             <Button onClick={() => router.push("/auth")} className="m-1 sm:m-0">
-              Sign Up
+              Log In
             </Button>
           </div>
         </nav>
