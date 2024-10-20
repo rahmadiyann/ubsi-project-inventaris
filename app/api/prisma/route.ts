@@ -584,6 +584,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
   }
 
   if (data.actionType === "medicine") {
+    const expiryDate = new Date(data.expiryDate);
     const medicine = await createMedicine(
       data.name,
       data.description,
@@ -592,7 +593,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
       data.categoryId,
       data.supplierId,
       data.dosage,
-      data.expiryDate
+      expiryDate
     );
     return NextResponse.json(medicine, { status: 200 });
   }
