@@ -190,7 +190,7 @@ export default function TransactionsTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           actionType: "transaction",
-          medicineId: newTransaction.medicineId,
+          medicineId: parseInt(newTransaction.medicineId),
           transactionType: newTransaction.type, // Changed from 'type' to 'transactionType'
           quantity: newTransaction.quantity,
           operatorId: parseInt(newTransaction.operatorId),
