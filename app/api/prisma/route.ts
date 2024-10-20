@@ -122,7 +122,19 @@ async function deleteCategory(id: number) {
     where: {
       id: id,
     },
+    include: {
+      medicines: true,
+    },
   });
+
+  // Delete associated medicines
+  if (category.medicines && category.medicines.length > 0) {
+    await db.medicine.deleteMany({
+      where: {
+        categoryId: id,
+      },
+    });
+  }
 
   return category;
 }
