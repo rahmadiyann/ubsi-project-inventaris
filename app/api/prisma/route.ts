@@ -4,7 +4,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 const db = prisma;
 
-async function getSuppliers() {
+async function getSuppliers(specific: boolean = false) {
+  if (specific) {
+    const suppliers = await db.supplier.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+    return suppliers;
+  }
+
   const suppliers = await db.supplier.findMany({
     include: {
       medicines: true,
@@ -103,7 +113,17 @@ async function deleteSupplier(id: number) {
   return supplier;
 }
 
-async function getCategories() {
+async function getCategories(specific: boolean = false) {
+  if (specific) {
+    const categories = await db.category.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+    return categories;
+  }
+
   const categories = await db.category.findMany({
     include: {
       medicines: true,
@@ -185,7 +205,18 @@ async function deleteCategory(id: number) {
   return category;
 }
 
-async function getMedicines() {
+async function getMedicines(specific: boolean = false) {
+  if (specific) {
+    const medicines = await db.medicine.findMany({
+      select: {
+        id: true,
+        name: true,
+        quantity: true,
+      },
+    });
+    return medicines;
+  }
+
   const medicines = await db.medicine.findMany({
     select: {
       id: true,
@@ -682,6 +713,7 @@ export async function DELETE(req: NextRequest, res: NextResponse) {
 export async function GET(req: NextRequest, res: NextResponse) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type");
+  const specific = searchParams.get("specific") || null;
   const id = searchParams.get("id") || null;
 
   if (!type) {
@@ -716,16 +748,28 @@ export async function GET(req: NextRequest, res: NextResponse) {
   }
 
   if (type === "suppliers") {
+    if (specific === "true") {
+      const suppliers = await getSuppliers(true);
+      return NextResponse.json(suppliers, { status: 200 });
+    }
     const suppliers = await getSuppliers();
     return NextResponse.json(suppliers, { status: 200 });
   }
 
   if (type === "categories") {
+    if (specific === "true") {
+      const categories = await getCategories(true);
+      return NextResponse.json(categories, { status: 200 });
+    }
     const categories = await getCategories();
     return NextResponse.json(categories, { status: 200 });
   }
 
   if (type === "medicines") {
+    if (specific === "true") {
+      const medicines = await getMedicines(true);
+      return NextResponse.json(medicines, { status: 200 });
+    }
     const medicines = await getMedicines();
     return NextResponse.json(medicines, { status: 200 });
   }
