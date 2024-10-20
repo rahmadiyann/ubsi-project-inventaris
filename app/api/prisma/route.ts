@@ -65,6 +65,35 @@ async function updateSupplier(
 }
 
 async function deleteSupplier(id: number) {
+  // Get all medicines from the supplier
+  const medicines = await db.medicine.findMany({
+    where: {
+      supplierId: id,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const medicineIds = medicines.map((medicine) => medicine.id);
+
+  // Delete associated transactions first
+  await db.transaction.deleteMany({
+    where: {
+      medicineId: {
+        in: medicineIds,
+      },
+    },
+  });
+
+  // Then delete the medicines
+  await db.medicine.deleteMany({
+    where: {
+      supplierId: id,
+    },
+  });
+
+  // Finally delete the supplier
   const supplier = await db.supplier.delete({
     where: {
       id: id,
@@ -118,23 +147,40 @@ async function updateCategory(id: number, name: string) {
 }
 
 async function deleteCategory(id: number) {
+  // Get all medicines in the category
+  const medicines = await db.medicine.findMany({
+    where: {
+      categoryId: id,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const medicineIds = medicines.map((medicine) => medicine.id);
+
+  // Delete associated transactions first
+  await db.transaction.deleteMany({
+    where: {
+      medicineId: {
+        in: medicineIds,
+      },
+    },
+  });
+
+  // Then delete the medicines
+  await db.medicine.deleteMany({
+    where: {
+      categoryId: id,
+    },
+  });
+
+  // Finally delete the category
   const category = await db.category.delete({
     where: {
       id: id,
     },
-    include: {
-      medicines: true,
-    },
   });
-
-  // Delete associated medicines
-  if (category.medicines && category.medicines.length > 0) {
-    await db.medicine.deleteMany({
-      where: {
-        categoryId: id,
-      },
-    });
-  }
 
   return category;
 }
@@ -225,6 +271,23 @@ async function updateMedicine(
 }
 
 async function deleteMedicine(id: number) {
+  // Check for transactions using the medicineId
+  const transactions = await db.transaction.findMany({
+    where: {
+      medicineId: id,
+    },
+  });
+
+  // Delete associated transactions if they exist
+  if (transactions.length > 0) {
+    await db.transaction.deleteMany({
+      where: {
+        medicineId: id,
+      },
+    });
+  }
+
+  // Finally, delete the medicine
   const medicine = await db.medicine.delete({
     where: {
       id: id,
