@@ -301,6 +301,19 @@ async function updateMedicine(
   return medicine;
 }
 
+async function confirmStockOpname(id: number) {
+  const medicine = await db.medicine.update({
+    where: {
+      id: id,
+    },
+    data: {
+      stockOpname: true,
+    },
+  });
+
+  return medicine;
+}
+
 async function deleteMedicine(id: number) {
   // Check for transactions using the medicineId
   const transactions = await db.transaction.findMany({
@@ -659,6 +672,11 @@ export async function PUT(req: NextRequest, res: NextResponse) {
       data.price,
       data.quantity
     );
+    return NextResponse.json(medicine, { status: 200 });
+  }
+
+  if (data.actionType === "confirm-stock-opname") {
+    const medicine = await confirmStockOpname(data.id);
     return NextResponse.json(medicine, { status: 200 });
   }
 
