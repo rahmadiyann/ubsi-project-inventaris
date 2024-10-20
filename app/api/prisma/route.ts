@@ -394,7 +394,6 @@ async function createTransaction(
         quantity: quantity,
         operatorId: operatorId,
         totalPrice: quantity * medicine.price,
-        createdAt: new Date(),
       },
     });
 
@@ -437,7 +436,6 @@ async function createTransaction(
         quantity: quantity,
         operatorId: operatorId,
         totalPrice: quantity * medicine.price,
-        createdAt: new Date(),
       },
     });
 
